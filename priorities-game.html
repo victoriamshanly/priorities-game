@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Priorities — The Party Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:linear-gradient(145deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);color:#f1f5f9;font-family:'Space Grotesk',sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px 16px}
+h1.title{font-family:'Lilita One',cursive;font-size:clamp(36px,8vw,56px);background:linear-gradient(135deg,#fbbf24,#f97316,#ef4444,#ec4899,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;margin-bottom:6px;text-align:center}
+.card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px 24px;width:100%;max-width:500px;display:flex;flex-direction:column;align-items:center;gap:16px;margin-top:10px}
+.card.wide{max-width:740px}
+.sub{font-size:15px;color:#94a3b8;text-align:center;max-width:420px;line-height:1.5}
+input.field{background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px 16px;color:#f1f5f9;font-family:'Space Grotesk',sans-serif;font-size:16px;outline:none;width:100%;max-width:300px;text-align:center;transition:border-color 0.2s}
+input.field:focus{border-color:rgba(99,102,241,0.5)}
+input.code-input{max-width:180px;letter-spacing:5px;text-transform:uppercase;font-family:'Lilita One',cursive;font-size:20px}
+.btn{color:#fff;border:none;border-radius:12px;padding:14px 32px;font-family:'Lilita One',cursive;font-size:17px;letter-spacing:1px;cursor:pointer;transition:all 0.2s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn:active{transform:translateY(0)}
+.btn-indigo{background:#6366f1;box-shadow:0 4px 20px #6366f144}
+.btn-sky{background:#0ea5e9;box-shadow:0 4px 20px #0ea5e944}
+.btn-green{background:#22c55e;box-shadow:0 4px 20px #22c55e44}
+.btn-orange{background:#f97316;box-shadow:0 4px 20px #f9731644}
+.btn-sm{padding:10px 18px;font-size:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.room-code{font-family:'Lilita One',cursive;font-size:30px;letter-spacing:7px;color:#fbbf24;background:rgba(251,191,36,0.1);padding:6px 20px;border-radius:12px}
+.pill{font-family:'Lilita One',cursive;font-size:16px;padding:6px 20px;border-radius:20px;letter-spacing:1px}
+.pill-gold{color:#fbbf24;background:rgba(251,191,36,0.12)}
+.pill-purple{color:#818cf8;background:rgba(99,102,241,0.12)}
+.player-row{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;margin-bottom:4px}
+.player-row.me{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3)}
+.player-row:not(.me){background:rgba(255,255,255,0.03);border:1px solid transparent}
+.error{color:#ef4444;font-size:14px}
+.muted{color:#94a3b8;font-size:13px}
+.footer{margin-top:24px;font-size:12px;color:#475569;text-align:center}
+.sort-list{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px}
+.sort-label{text-align:center;font-family:'Lilita One',cursive;font-size:13px;letter-spacing:2px;text-transform:uppercase}
+.sort-label-top{color:#22c55e}
+.sort-label-bottom{color:#ef4444}
+.sort-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.10);border-radius:14px;padding:12px 14px;cursor:grab;user-select:none;transition:all 0.18s}
+.sort-item.dragging{opacity:0.45;background:rgba(251,191,36,0.13)}
+.sort-item.dragover{border:2px dashed #818cf8;background:rgba(99,102,241,0.10)}
+.sort-num{font-family:'Lilita One',cursive;font-size:18px;min-width:26px;text-align:center}
+.sort-text{flex:1;font-weight:600;font-size:17px}
+.sort-arrows{display:flex;flex-direction:column;gap:2px}
+.sort-arrows button{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
+.sort-arrows button:disabled{color:#334155;cursor:default}
+.reveal-cols{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;width:100%}
+.reveal-col{flex:1;min-width:220px}
+.reveal-col-title{text-align:center;font-family:'Lilita One',cursive;font-size:14px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+.reveal-item{display:flex;align-items:center;gap:10px;border-radius:12px;padding:10px 14px;margin-bottom:8px}
+.reveal-item.correct{background:rgba(34,197,94,0.18);border:2px solid #22c55e}
+.reveal-item.wrong{background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.08)}
+.reveal-num{font-family:'Lilita One',cursive;font-size:17px;min-width:24px}
+.reveal-text{font-weight:600;font-size:16px}
+.score-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-radius:10px;margin-bottom:6px}
+.score-row.first{background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3)}
+.score-row:not(.first){background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)}
+.score-name{font-weight:600}
+.score-pts{font-family:'Lilita One',cursive;font-size:20px;color:#fbbf24}
+.card-chip{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:8px 16px;font-weight:600;font-size:14px;display:inline-block;margin:3px}
+.big-emoji{font-size:48px;margin-bottom:12px;text-align:center}
+.result-title{font-family:'Lilita One',cursive;text-align:center}
+.w-full{width:100%}
+.mt-12{margin-top:12px}
+.text-center{text-align:center}
+.connecting{color:#fbbf24;font-size:13px;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+</style>
+</head>
+<body>
+
+<h1 class="title">PRIORITIES</h1>
+<div id="app"></div>
+
+<script>
+// ===== FIREBASE REST API (no SDK) =====
+const DB = "https://priorities-game-default-rtdb.europe-west1.firebasedatabase.app";
+
+async function fbSet(path, data) {
+  const r = await fetch(DB + "/" + path + ".json", { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) });
+  return r.json();
+}
+async function fbGet(path) {
+  const r = await fetch(DB + "/" + path + ".json");
+  return r.json();
+}
+async function fbUpdate(path, data) {
+  const r = await fetch(DB + "/" + path + ".json", { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) });
+  return r.json();
+}
+
+// SSE real-time listener
+let currentSSE = null;
+function fbListen(path, cb) {
+  if (currentSSE) { currentSSE.close(); currentSSE = null; }
+  const es = new EventSource(DB + "/" + path + ".json");
+  es.addEventListener("put", (e) => {
+    try { cb(JSON.parse(e.data)); } catch(err) { console.error("SSE parse error", err); }
+  });
+  es.addEventListener("patch", (e) => {
+    // On patch we just re-fetch full state for simplicity
+    fbGet(path).then(data => cb({ path: "/", data })).catch(() => {});
+  });
+  es.onerror = () => {
+    console.log("SSE reconnecting...");
+    // EventSource auto-reconnects
+  };
+  currentSSE = es;
+}
+
+// ===== WORDS =====
+const WORDS = [
+  "Pizza","Naps","Skydiving","Puppies","Karaoke","Chocolate","Beach Day","Road Trip","Sushi","Dancing","Camping","Roller Coasters","Sunsets","Board Games","Ice Cream","Hiking","Movie Night","Brunch","Tacos","Bubble Bath","Stargazing","Surfing","Binge Watching","Live Music","Cooking","Shopping","Yoga","Video Games","Tattoos","Concerts","Traveling","Sleeping In","Coffee","Wine","Gardening","Photography","Painting","Skiing","Swimming","Fishing","Cycling","Meditation","Podcasts","Reading","Baking","Singing","Running","Spa Day","Theme Parks","Picnics","Fireworks","Trampolines","Go Karts",
+  "Free Lunch","Friday Afternoon","Remote Work","Team Building","Slack Messages","Meetings","Deadlines","Coffee Break","Brainstorming","Presentations","Spreadsheets","Lunch Break","Office Gossip","Stand-ups","Happy Hour","Pay Day","Bonus","Promotion","Work From Home","Office Plants","Email Inbox Zero","Casual Friday","Company Retreat","Free Snacks","Long Weekend","Early Finish","New Laptop","Office Dog","Quiet Office","Window Seat","No Meetings Day","Flexible Hours","Mentorship","Side Projects","Training Budget","Ping Pong Table","Good WiFi","Standing Desk","Office Views","Team Lunch","Annual Leave","Sick Day Duvet",
+  "Mondays","Small Talk","Alarm Clocks","Pineapple on Pizza","Cold Weather","Hot Weather","Silence","Crowds","Spicy Food","Public Speaking","Early Mornings","Late Nights","Rain","Social Media","Being Alone","Surprises","Routine","Spontaneity","Competition","Compliments","Constructive Criticism","Change",
+  "Walking Barefoot on Grass","Walking Over Broken Glass","Lucid Dreaming","Eating Cereal at 3AM","The Smell After Rain","Peeling Off a Screen Protector Perfectly","Stepping on a Crunchy Leaf","Finding Money in Old Pants","Hearing Your Voice Recorded","Being Abducted by Friendly Aliens","Living in a Submarine for a Year","Never Needing Sleep Again","Talking to Animals","Reading Everyone's Thoughts","Being Invisible for a Day","Reliving One Day Forever","Eating Only One Food for Life","Having a Personal Theme Song","Knowing How You'll Die","Time Traveling but Only 5 Minutes","Wet Socks","Paper Cuts","Warm Toilet Seat from a Stranger","The Sound of Chewing","Someone Reading Over Your Shoulder","Déjà Vu","Sleep Paralysis","A Song Stuck in Your Head for a Week","Being the Last Person on Earth","Living Without Mirrors","Sneezing but It Never Comes","Hiccups That Last a Month","Smelling Colors","Tasting Music","Your Pet Suddenly Speaking to You","Waking Up 10 Years Younger","Permanently Perfect Hair","Never Feeling Cold Again","Remembering Every Dream","Forgetting Your Most Embarrassing Moment","Swimming With Sharks","Holding a Tarantula","Licking a Frozen Pole","Eating a Ghost Pepper","Living in a Treehouse","Sleeping in Zero Gravity","Having a Twin You Never Knew About","Your Boss Reads Your Group Chat"
+];
+
+// ===== STATE =====
+const S = {
+  phase: "home",
+  pid: localStorage.getItem("pri_pid") || (() => { const id="p_"+Math.random().toString(36).slice(2,10); localStorage.setItem("pri_pid",id); return id; })(),
+  name: "",
+  room: "",
+  host: false,
+  players: [],
+  game: null,
+  scores: {},
+  secret: [],
+  guess: [],
+  guessSent: false,
+  err: "",
+  showJoin: false,
+  cwInput: "",
+};
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+// Custom words get dealt first, excluding words authored by the target player
+// customWords = [{text, author}], usedCustom = [text], targetPid = player id of target
+function drawPrioritized(customWords, usedCustom, targetPid, n=5) {
+  // Filter out words by the target player, and already-used ones
+  const available = customWords
+    .filter(w => w.author !== targetPid && !usedCustom.includes(w.text))
+    .map(w => w.text);
+  const picked = shuffle(available).slice(0, n);
+  const remaining = n - picked.length;
+  if (remaining > 0) {
+    const filler = shuffle(WORDS.filter(w => !picked.includes(w))).slice(0, remaining);
+    picked.push(...filler);
+  }
+  const allCustomTexts = customWords.map(w => w.text);
+  return { cards: shuffle(picked), nowUsed: [...usedCustom, ...picked.filter(w => allCustomTexts.includes(w))] };
+}
+function genCode(){const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return Array.from({length:5},()=>c[Math.floor(Math.random()*c.length)]).join("");}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ===== ROOM LISTENER =====
+let lastGamePhase = null;
+
+function startListening(code) {
+  fbListen("rooms/" + code, (evt) => {
+    // evt.data is full room on "put" at root
+    const room = evt.path === "/" ? evt.data : null;
+    if (!room) {
+      // partial update — refetch
+      fbGet("rooms/" + code).then(processRoom);
+      return;
+    }
+    processRoom(room);
+  });
+  // Also do an immediate fetch
+  fbGet("rooms/" + code).then(processRoom);
+}
+
+function processRoom(room) {
+  if (!room) return;
+  S.players = room.players ? Object.values(room.players) : [];
+  S.scores = room.scores || {};
+
+  if (room.game) {
+    const g = room.game;
+    const oldPhase = lastGamePhase;
+    S.game = g;
+    lastGamePhase = g.phase;
+
+    if (g.phase === "lobby") {
+      S.phase = "lobby";
+      S.guessSent = false;
+    }
+    if (g.phase === "ranking" && oldPhase !== "ranking") {
+      S.phase = "ranking";
+      S.secret = g.cards ? [...g.cards] : [];
+      S.guess = g.cards ? shuffle(g.cards) : [];
+      S.guessSent = false;
+    }
+    if (g.phase === "guessing") {
+      S.phase = "guessing";
+    }
+    if (g.phase === "reveal") {
+      S.phase = "reveal";
+      if (g.secret) S.secret = g.secret;
+      if (g.guess) S.guess = g.guess;
+    }
+    if (g.phase === "end") {
+      S.phase = "end";
+    }
+  }
+  render();
+}
+
+// ===== ACTIONS =====
+async function createRoom() {
+  if (!S.name.trim()) { S.err = "Enter your name!"; render(); return; }
+  S.err = "";
+  const code = genCode();
+  const me = { id: S.pid, name: S.name.trim(), isHost: true };
+  try {
+    await fbSet("rooms/" + code, {
+      players: { [S.pid]: me },
+      game: { phase: "lobby", targetIdx: 0, round: 0, cards: [] },
+      scores: {},
+      customWords: []
+    });
+    S.room = code;
+    S.host = true;
+    S.players = [me];
+    S.phase = "lobby";
+    lastGamePhase = "lobby";
+    startListening(code);
+    render();
+  } catch (e) {
+    S.err = "Failed to create room: " + e.message;
+    render();
+  }
+}
+
+async function joinRoom() {
+  if (!S.name.trim()) { S.err = "Enter your name!"; render(); return; }
+  const inp = document.getElementById("joinCodeInput");
+  const code = (inp ? inp.value : "").trim().toUpperCase();
+  if (!code) { S.err = "Enter a room code!"; render(); return; }
+  S.err = "";
+  try {
+    const room = await fbGet("rooms/" + code);
+    if (!room) { S.err = 'Room "' + code + '" not found.'; render(); return; }
+    if (room.game && room.game.phase !== "lobby") { S.err = "Game already in progress!"; render(); return; }
+    const me = { id: S.pid, name: S.name.trim(), isHost: false };
+    await fbSet("rooms/" + code + "/players/" + S.pid, me);
+    S.room = code;
+    S.host = false;
+    S.phase = "lobby";
+    lastGamePhase = "lobby";
+    startListening(code);
+    render();
+  } catch (e) {
+    S.err = "Could not join: " + e.message;
+    render();
+  }
+}
+
+async function addCW() {
+  const w = S.cwInput.trim(); if (!w) return;
+  S.cwInput = "";
+  const existing = (await fbGet("rooms/" + S.room + "/customWords")) || [];
+  existing.push({ text: w, author: S.pid });
+  await fbSet("rooms/" + S.room + "/customWords", existing);
+  render();
+}
+
+async function startGame() {
+  if (S.players.length < 2) { S.err = "Need at least 2 players!"; render(); return; }
+  const cw = (await fbGet("rooms/" + S.room + "/customWords")) || [];
+  const targetPid = S.players[0]?.id;
+  // Guesser is a different player than the target, rotating from index 1
+  const guesserIdx = S.players.length > 2 ? 1 : (0 === 0 ? 1 : 0);
+  const { cards, nowUsed } = drawPrioritized(cw, [], targetPid, 5);
+  await fbUpdate("rooms/" + S.room, {
+    game: { phase: "ranking", targetIdx: 0, guesserIdx: guesserIdx, round: 1, cards },
+    scores: {},
+    usedCustom: nowUsed
+  });
+  S.err = "";
+}
+
+async function submitSecret() {
+  await fbUpdate("rooms/" + S.room + "/game", { phase: "guessing", secret: S.secret });
+}
+
+async function submitGuess() {
+  S.guessSent = true;
+  render();
+  const g = await fbGet("rooms/" + S.room + "/game");
+  const secret = g.secret || [];
+  let pts = 0;
+  secret.forEach((c, i) => { if (S.guess[i] === c) pts++; });
+  const sc = (await fbGet("rooms/" + S.room + "/scores")) || {};
+  const targetId = S.players[g.targetIdx || 0]?.id;
+  S.players.forEach(p => { if (p.id !== targetId) sc[p.id] = (sc[p.id] || 0) + pts; });
+  await fbUpdate("rooms/" + S.room, { scores: sc });
+  await fbUpdate("rooms/" + S.room + "/game", { phase: "reveal", guess: S.guess });
+}
+
+async function nextRound() {
+  const g = S.game;
+  const nextTarget = (g.targetIdx || 0) + 1;
+  if (nextTarget >= S.players.length) {
+    await fbUpdate("rooms/" + S.room + "/game", { phase: "end" });
+    return;
+  }
+  // Rotate guesser: pick next player who isn't the target
+  const prevGuesser = g.guesserIdx || 0;
+  let nextGuesser = (prevGuesser + 1) % S.players.length;
+  if (nextGuesser === nextTarget) nextGuesser = (nextGuesser + 1) % S.players.length;
+  const cw = (await fbGet("rooms/" + S.room + "/customWords")) || [];
+  const used = (await fbGet("rooms/" + S.room + "/usedCustom")) || [];
+  const targetPid = S.players[nextTarget]?.id;
+  const { cards, nowUsed } = drawPrioritized(cw, used, targetPid, 5);
+  await fbSet("rooms/" + S.room + "/game", { phase: "ranking", targetIdx: nextTarget, guesserIdx: nextGuesser, round: nextTarget + 1, cards });
+  await fbSet("rooms/" + S.room + "/usedCustom", nowUsed);
+}
+
+async function playAgain() {
+  await fbUpdate("rooms/" + S.room, {
+    game: { phase: "lobby", targetIdx: 0, round: 0, cards: [] },
+    scores: {},
+    usedCustom: []
+  });
+}
+
+// ===== DRAG & DROP =====
+let dragIdx = null;
+
+function setupDrag(containerId, listKey) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.querySelectorAll(".sort-item").forEach((item, i) => {
+      item.draggable = true;
+      item.ondragstart = () => { dragIdx = i; item.classList.add("dragging"); };
+      item.ondragend = () => { item.classList.remove("dragging"); dragIdx = null; el.querySelectorAll(".sort-item").forEach(x => x.classList.remove("dragover")); };
+      item.ondragover = (e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i) item.classList.add("dragover"); };
+      item.ondragleave = () => item.classList.remove("dragover");
+      item.ondrop = (e) => {
+        e.preventDefault(); item.classList.remove("dragover");
+        if (dragIdx === null || dragIdx === i) return;
+        const a = [...S[listKey]]; const [m] = a.splice(dragIdx, 1); a.splice(i, 0, m);
+        S[listKey] = a; dragIdx = null;
+        render();
+      };
+      // Touch support
+      let touchY = 0;
+      item.ontouchstart = (e) => {
+        dragIdx = i;
+        touchY = e.touches[0].clientY;
+        item.classList.add("dragging");
+      };
+      item.ontouchmove = (e) => { e.preventDefault(); };
+      item.ontouchend = (e) => {
+        item.classList.remove("dragging");
+        const endY = e.changedTouches[0].clientY;
+        const diff = endY - touchY;
+        if (Math.abs(diff) > 30) {
+          const dir = diff > 0 ? 1 : -1;
+          mv(listKey, i, i + dir);
+        }
+        dragIdx = null;
+      };
+    });
+  });
+}
+
+function mv(listKey, from, to) {
+  const a = [...S[listKey]];
+  if (to < 0 || to >= a.length) return;
+  const [m] = a.splice(from, 1); a.splice(to, 0, m);
+  S[listKey] = a;
+  render();
+}
+
+// ===== RENDER HELPERS =====
+function numColor(i, len) { return i === 0 ? "#22c55e" : i === len - 1 ? "#ef4444" : "#a5b4fc"; }
+
+function sortListHTML(id, cards, listKey) {
+  return '<div class="sort-list" id="' + id + '">' +
+    '<div class="sort-label sort-label-top">❤️ Love</div>' +
+    cards.map((c, i) =>
+      '<div class="sort-item">' +
+        '<span class="sort-num" style="color:' + numColor(i, cards.length) + '">' + (i+1) + '</span>' +
+        '<span class="sort-text">' + esc(c) + '</span>' +
+        '<span class="sort-arrows">' +
+          '<button onclick="mv(\'' + listKey + '\',' + i + ',' + (i-1) + ')"' + (i===0?' disabled':'') + '>▲</button>' +
+          '<button onclick="mv(\'' + listKey + '\',' + i + ',' + (i+1) + ')"' + (i===cards.length-1?' disabled':'') + '>▼</button>' +
+        '</span>' +
+      '</div>'
+    ).join("") +
+    '<div class="sort-label sort-label-bottom">💔 Loathe</div></div>';
+}
+
+function revealHTML(secret, guess) {
+  function col(label, color, data) {
+    return '<div class="reveal-col"><div class="reveal-col-title" style="color:'+color+'">'+label+'</div>' +
+      data.map((c,i) => {
+        const ok = secret[i]===guess[i];
+        return '<div class="reveal-item '+(ok?'correct':'wrong')+'"><span class="reveal-num" style="color:'+color+'">'+(i+1)+'</span><span class="reveal-text">'+esc(c)+'</span>'+(ok?'<span style="margin-left:auto;font-size:18px;color:#22c55e">✓</span>':'')+'</div>';
+      }).join("") + '</div>';
+  }
+  return '<div class="reveal-cols">' + col("Secret Ranking","#fbbf24",secret) + col("Group Guess","#818cf8",guess) + '</div>';
+}
+
+function scoreHTML(players, scores) {
+  const sorted = [...players].sort((a,b) => (scores[b.id]||0) - (scores[a.id]||0));
+  return '<div style="width:100%;max-width:400px;margin:0 auto">' +
+    sorted.map((p,i) =>
+      '<div class="score-row'+(i===0?' first':'')+'"><span class="score-name">'+(i===0?'👑 ':'')+esc(p.name)+'</span><span class="score-pts">'+(scores[p.id]||0)+'</span></div>'
+    ).join("") + '</div>';
+}
+
+// ===== MAIN RENDER =====
+function render() {
+  const g = S.game;
+  const tIdx = g?.targetIdx || 0;
+  const gIdx = g?.guesserIdx || 0;
+  const isT = S.players.length > 0 && S.players[tIdx]?.id === S.pid;
+  const isG = S.players.length > 0 && S.players[gIdx]?.id === S.pid;
+  const tName = S.players[tIdx]?.name || "?";
+  const gName = S.players[gIdx]?.name || "?";
+  const app = document.getElementById("app");
+  let h = "";
+
+  if (S.phase === "home") {
+    h = '<div class="card">' +
+      '<p class="sub">The party game where your friends guess your priorities. How well do they really know you?</p>' +
+      '<input class="field" id="nameInput" placeholder="Your name" maxlength="20" value="'+esc(S.name)+'" oninput="S.name=this.value" onkeydown="if(event.key===\'Enter\')createRoom()">' +
+      '<div class="row" style="margin-top:8px"><button class="btn btn-indigo" onclick="createRoom()">Create Room</button><button class="btn btn-sky" onclick="S.showJoin=true;render()">Join Room</button></div>' +
+      (S.showJoin ? '<div class="row" style="margin-top:8px"><input class="field code-input" id="joinCodeInput" placeholder="CODE" maxlength="5" onkeydown="if(event.key===\'Enter\')joinRoom()"><button class="btn btn-green" onclick="joinRoom()">Go</button></div>' : '') +
+      (S.err ? '<p class="error">'+esc(S.err)+'</p>' : '') +
+    '</div>';
+  }
+
+  else if (S.phase === "lobby") {
+    h = '<div class="card">' +
+      '<div class="row" style="align-items:center"><span class="muted">Room:</span><span class="room-code">'+S.room+'</span></div>' +
+      '<p class="muted">Share this code with your friends!</p>' +
+      '<div class="w-full mt-12"><div style="font-family:\'Lilita One\',cursive;font-size:15px;color:#818cf8;margin-bottom:8px;letter-spacing:1px">Players ('+S.players.length+')</div>' +
+      S.players.map(p =>
+        '<div class="player-row'+(p.id===S.pid?' me':'')+'"><span style="font-size:18px">'+(p.isHost?'👑':'🎮')+'</span><span style="font-weight:600">'+esc(p.name)+'</span>'+(p.id===S.pid?'<span style="font-size:11px;color:#6366f1;margin-left:auto">you</span>':'')+'</div>'
+      ).join("") + '</div>' +
+      '<div class="w-full mt-12"><div style="font-family:\'Lilita One\',cursive;font-size:13px;color:#94a3b8;margin-bottom:6px;letter-spacing:1px">Add Custom Words</div>' +
+      '<div style="display:flex;gap:8px"><input class="field" style="max-width:100%;flex:1;text-align:left;font-size:14px;padding:10px 12px" id="cwInput" placeholder="e.g. Free Pizza Fridays" value="'+esc(S.cwInput)+'" maxlength="30" oninput="S.cwInput=this.value" onkeydown="if(event.key===\'Enter\')addCW()"><button class="btn btn-green btn-sm" onclick="addCW()">+</button></div></div>' +
+      (S.host ? '<button class="btn btn-orange" style="margin-top:12px" onclick="startGame()">Start Game 🚀</button>' : '<p class="muted">Waiting for host to start...</p>') +
+      (S.err ? '<p class="error">'+esc(S.err)+'</p>' : '') +
+    '</div>';
+  }
+
+  else if (S.phase === "ranking") {
+    const cards = g?.cards || [];
+    h = '<div class="card">' +
+      '<div class="pill pill-gold">🎯 '+esc(tName)+'\'s turn</div>' +
+      '<div style="font-family:\'Lilita One\',cursive;font-size:13px;color:#818cf8;letter-spacing:1px;margin-top:-4px">🎮 '+esc(gName)+' will guess</div>';
+    if (isT) {
+      h += '<p class="muted">Rank from <span style="color:#22c55e">LOVE</span> to <span style="color:#ef4444">LOATHE</span>. Only you see this!</p>' +
+        sortListHTML("secretList", S.secret, "secret") +
+        '<button class="btn btn-green" onclick="submitSecret()">Lock In My Ranking 🔒</button>';
+    } else {
+      h += '<div class="big-emoji">🤫</div><p class="muted text-center"><strong>'+esc(tName)+'</strong> is secretly ranking...</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px">' +
+        cards.map(c => '<span class="card-chip">'+esc(c)+'</span>').join("") + '</div>';
+    }
+    h += '</div>';
+    if (isT) setupDrag("secretList", "secret");
+  }
+
+  else if (S.phase === "guessing") {
+    h = '<div class="card">' +
+      '<div class="pill pill-purple">🤔 Guess '+esc(tName)+'\'s ranking</div>' +
+      '<div style="font-family:\'Lilita One\',cursive;font-size:13px;color:#22c55e;letter-spacing:1px;margin-top:-4px">🎮 '+esc(gName)+' is guessing</div>';
+    if (isT) {
+      h += '<div class="big-emoji">😎</div><p class="muted text-center">Your ranking is locked! Waiting for <strong>'+esc(gName)+'</strong> to guess...</p>';
+    } else if (isG && !S.guessSent) {
+      h += '<p class="muted text-center">You\'re the guesser! Discuss with the team, then arrange and submit.</p>' +
+        sortListHTML("guessList", S.guess, "guess") +
+        '<button class="btn btn-orange" onclick="submitGuess()">Submit Guess 🎯</button>';
+    } else if (S.guessSent) {
+      h += '<div class="big-emoji">✅</div><p class="muted text-center">Guess submitted! Waiting for reveal...</p>';
+    } else {
+      // Other players — can see the cards but can't arrange them
+      h += '<p class="muted text-center">Discuss with <strong>'+esc(gName)+'</strong> — they\'re arranging the guess!</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px">' +
+        (g?.cards || []).map(c => '<span class="card-chip">'+esc(c)+'</span>').join("") + '</div>';
+    }
+    h += '</div>';
+    if (isG && !S.guessSent) setupDrag("guessList", "guess");
+  }
+
+  else if (S.phase === "reveal") {
+    const secret = g?.secret || S.secret;
+    const guess = g?.guess || S.guess;
+    let pts = 0;
+    if (secret && guess) secret.forEach((c,i) => { if(guess[i]===c) pts++; });
+    const col = pts>=4?"#22c55e":pts>=2?"#fbbf24":"#ef4444";
+    const msg = pts===5?"🎉 PERFECT! 🎉":pts>=3?"✨ "+pts+"/5 — Nice!":pts>=1?pts+"/5 — Not bad!":"0/5 — Ouch! 😅";
+    h = '<div class="card wide">' +
+      '<div class="result-title" style="font-size:'+(pts>=4?28:24)+'px;color:'+col+'">'+msg+'</div>' +
+      revealHTML(secret, guess) +
+      '<div class="w-full mt-12"><div style="font-family:\'Lilita One\',cursive;font-size:14px;color:#94a3b8;margin-bottom:8px;text-align:center;letter-spacing:1px">Scores</div>' +
+      scoreHTML(S.players, S.scores) + '</div>' +
+      (S.host ?
+        '<button class="btn btn-indigo" style="margin-top:12px" onclick="nextRound()">' + (tIdx+1>=S.players.length ? 'See Final Scores 🏆' : 'Next Round ➡️') + '</button>'
+        : '<p class="muted">Waiting for host...</p>') +
+    '</div>';
+  }
+
+  else if (S.phase === "end") {
+    h = '<div class="card"><div class="result-title" style="font-size:28px;color:#fbbf24">🏆 Final Scores</div>' +
+      scoreHTML(S.players, S.scores) +
+      (S.host ? '<button class="btn btn-indigo" style="margin-top:16px" onclick="playAgain()">Play Again 🔄</button>' : '') +
+    '</div>';
+  }
+
+  if (S.phase !== "home") {
+    h += '<div class="footer">Room <strong>'+S.room+'</strong> · '+S.players.length+' player'+(S.players.length!==1?'s':'')+' · You: '+esc(S.name)+'</div>';
+  }
+
+  app.innerHTML = h;
+}
+
+// Global access
+window.S = S;
+window.createRoom = createRoom;
+window.joinRoom = joinRoom;
+window.addCW = addCW;
+window.startGame = startGame;
+window.submitSecret = submitSecret;
+window.submitGuess = submitGuess;
+window.nextRound = nextRound;
+window.playAgain = playAgain;
+window.mv = mv;
+window.render = render;
+
+render();
+</script>
+</body>
+</html>
